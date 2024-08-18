@@ -58,13 +58,48 @@ void number_buf_assign(void* pixel, PixelBuf* buf, int x, int y);
 
 void kernel_apply(KernelOpsInterace interface, Kernel kernel, PixelBuf* in_buf, PixelBuf* out_buf);
 
+void core_init();
+void core_dispose();
 
 
+
+KernelOpsInterace number_kernel_interface;
+KernelOpsInterace pixel_kernel_interface;
+Arena _core_arena;
 
 
 #endif //CORE_H
 
 #ifdef CORE_IMPLEMENTATION_H
+
+
+void core_init() {
+    arena_init(&_core_arena,1024);
+
+    pixel_kernel_interface = (KernelOpsInterace) {
+        .zero = pixel_zero,
+        .add = pixel_add,
+        .mult = pixel_mult,
+        .buf_assign = pixel_buf_assign,
+        .buf_mult = pixel_buf_mult,
+        .acc = arena_alloc_of(&_core_arena,Pixel,1),
+        .tmp = arena_alloc_of(&_core_arena,Pixel,1),
+    };
+    number_kernel_interface = (KernelOpsInterace) {
+        .zero = number_zero,
+        .add = number_add,
+        .mult = number_mult,
+        .buf_assign = number_buf_assign,
+        .buf_mult = number_buf_mult,
+        .acc = arena_alloc_of(&_core_arena,int,1),
+        .tmp = arena_alloc_of(&_core_arena,int,1),
+    };
+}
+
+void core_dispose() {
+    arena_dispose(&_core_arena);
+}
+
 
 PixelBuf pixelbuf_load(Arena* arena, char* fn, int comps) {
     if (comps == 0) comps = 1;
@@ -150,8 +185,8 @@ void kernel_apply(KernelOpsInterace interface, Kernel kernel, PixelBuf* in_buf, 
                     int yPos = y + cy;
                     if (xPos < 0) xPos = x;
                     if (yPos < 0) yPos = y;
-                    if (xPos >= in_buf->w) xPos -= in_buf->w;
-                    if (yPos >= in_buf->h) yPos -= in_buf->h;
+                    if (xPos >= in_buf->w) xPos = x;
+                    if (yPos >= in_buf->h) yPos = y;
 
                     float kernel_factor = kernel.matrix[(cy - kstart) * kernel.w + (cx - kstart)];
 
