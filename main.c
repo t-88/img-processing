@@ -21,12 +21,13 @@ int main() {
 
 
 
-    PixelBuf img_buf = pixelbuf_load(&arena, "assets/wiki.png", 1);
-    PixelBuf out_buf = { .w = img_buf.w, .h = img_buf.h, .comps = 1};
+    PixelBuf img_buf = pixelbuf_load(&arena, "assets/wiki.png", 3);
+    PixelBuf out_buf = { .w = img_buf.w, .h = img_buf.h, .comps = 3};
     out_buf.pixels = arena_alloc_of(&arena, uint8_t, img_buf.w * img_buf.h * out_buf.comps);
 
     Kernel kernel = {
         // .w = 2, .h = 2, .factor = 1 , .matrix = (int[]) { -1,-1,1,1}
+        // .w = 3, .h = 3, .factor = 1, .matrix = (int[]) { 0,-1,0, -1,5,-1, 0,-1,0}
         // .w = 3, .h = 3, .factor = 1, .matrix = (int[]) { -1,-2,-1, 0,0,0, 1,2,1}
         // .w = 3, .h = 3, .factor = 1, .matrix = (int[]) { 0,-1,0,-1,4,-1,0,-1,0}
         // .w = 3, .h = 3, .factor = 1, .matrix = (int[]) { -1,-1,-1,-1,8,-1,-1,-1,-1}
@@ -36,9 +37,9 @@ int main() {
     };
 
 
-    kernel_apply(number_kernel_interface, kernel, &img_buf, &out_buf);
-    pixelbuf_save(out_buf, "out.png");
-    pixelbuf_save(img_buf, "img.png");
+    kernel_apply(pixel_kernel_interface, kernel, &img_buf, &out_buf);
+    pixelbuf_save(out_buf, "outputs/out.png");
+    pixelbuf_save(img_buf, "outputs/img.png");
 
     core_dispose();
     arena_dispose(&arena);
