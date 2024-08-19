@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <limits.h>
+#include <float.h>
 #include <math.h>
 
 
@@ -45,7 +46,7 @@ PixelBuf pixelbuf_save(PixelBuf buf, char* fn, bool norm);
 PixelBuf pixelbuf_copy(Arena* arena, PixelBuf buf);
 PixelBuf pixelbuf_normalize(Arena* arena, PixelBuf* buf);
 PixelBuf pixelbuf_normalize_to_128(Arena* arena, PixelBuf* buf);
-
+void pixelbuf_get_img_info(char* fn, int* w, int* h, int req_comps);
 
 void pixel_zero(void* out);
 void pixel_add(void* out, void* other);
@@ -142,8 +143,8 @@ PixelBuf pixelbuf_init(Arena* arena, int w, int h, int comps) {
 }
 
 PixelBuf pixelbuf_normalize_to_128(Arena* arena, PixelBuf* buf) {
-    int maxs[3] = { INT_MIN, INT_MIN, INT_MIN };
-    int mins[3] = { INT_MAX, INT_MAX, INT_MAX };
+    float maxs[3] = { FLT_MIN, FLT_MIN, FLT_MIN };
+    float mins[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
 
     for (int y = 0; y < buf->h; y++) {
         for (int x = 0; x < buf->w; x++) {
@@ -160,12 +161,12 @@ PixelBuf pixelbuf_normalize_to_128(Arena* arena, PixelBuf* buf) {
         for (int x = 0; x < buf->w; x++) {
             for (int i = 0; i < buf->comps; i++) {
                 const int idx = buf->comps * (y * buf->w + x) + i;
-                const int pixel = buf->pixels[idx];
+                const float pixel = buf->pixels[idx];
                 if (pixel > 0) {
-                    out_buf.pixels[idx] = ((float)(pixel - 0) / (float)(maxs[i] - 0)) * 129.f + 128.f;
+                    out_buf.pixels[idx] = (pixel - 0) / (float)(maxs[i] - 0) * 128.f + 128.f;
                 }
                 else if(pixel < 0) {
-                    out_buf.pixels[idx] = ((float)(pixel - mins[i]) / (float)(0 - mins[i])) * 127.f;
+                    out_buf.pixels[idx] = (pixel - mins[i]) / (float)(0 - mins[i]) * 128.f;
                 } 
             }
         }
@@ -176,8 +177,8 @@ PixelBuf pixelbuf_normalize_to_128(Arena* arena, PixelBuf* buf) {
 
 
 PixelBuf pixelbuf_normalize(Arena* arena, PixelBuf* buf) {
-    int maxs[3] = { INT_MIN, INT_MIN, INT_MIN };
-    int mins[3] = { INT_MAX, INT_MAX, INT_MAX };
+    float maxs[3] = { FLT_MIN, FLT_MIN, FLT_MIN };
+    float mins[3] = { FLT_MAX, FLT_MAX, FLT_MAX };
 
     PixelBuf out_buf = pixelbuf_init(arena, buf->w, buf->h, buf->comps);
     for (int y = 0; y < buf->h; y++) {
@@ -193,7 +194,7 @@ PixelBuf pixelbuf_normalize(Arena* arena, PixelBuf* buf) {
         for (int x = 0; x < buf->w; x++) {
             for (int i = 0; i < buf->comps; i++) {
                 const int idx = buf->comps * (y * buf->w + x) + i;
-                const int pixel = buf->pixels[idx];
+                const float pixel = buf->pixels[idx];
                 out_buf.pixels[idx] = ((float)(pixel - mins[i]) / (maxs[i] - mins[i])) * 255;
             }
         }
@@ -236,6 +237,12 @@ PixelBuf pixelbuf_copy(Arena* arena, PixelBuf buf) {
     out.pixels = arena_alloc_of(arena, int, buf.w * buf.h * buf.comps);
     memcpy(out.pixels, buf.pixels, buf.w * buf.h * buf.comps);
     return out;
+}
+
+void pixelbuf_get_img_info(char* fn, int* w, int* h, int req_comps) {
+    uint8_t* ptr = stbi_load(fn, w, h, 0, req_comps);
+    assert(ptr && "Failed to load img file. wrong path?");
+    stbi_image_free(ptr);
 }
 
 
@@ -291,7 +298,6 @@ void number_mult(void* out, float factor) {
 void number_buf_mult(void* out, float factor, PixelBuf* buf, int x, int y) {
     int* casted = (int*)out;
     *casted = buf->pixels[y * buf->w + x] * factor;
-
 }
 void number_buf_assign(void* pixel, PixelBuf* buf, int x, int y) {
     int* casted = (int*)pixel;
