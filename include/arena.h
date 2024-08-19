@@ -34,7 +34,7 @@ void* arena_alloc(Arena* arena,size_t size) {
     if(!size) return 0;
     
     const size_t _alignment_offset = arena->offset % ARENA_DEFAULT_ALIGNMENT;
-    assert(arena->offset + _alignment_offset + size < arena->size && "Failed to allocate memory, arena doesnt have enough memory");
+    assert(arena->offset + _alignment_offset + size <= arena->size && "Failed to allocate memory, arena doesnt have enough memory");
 
     arena->offset += _alignment_offset;
     void* addr = arena->base + arena->offset;
