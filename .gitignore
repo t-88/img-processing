@@ -2,3 +2,7 @@ main
 .vscode
 .editorconfig
 tmps
+
+
+# frames
+assets/dene_road/*.png
